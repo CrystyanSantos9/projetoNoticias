@@ -32,19 +32,32 @@
           <li class="nav-item">
             <a class="nav-link" href="/noticias">Notícias</a>
           </li>
-          <li class="nav-item">
-            <a class="nav-link" href="/restrito/noticias">Notícias Restritas</a>
-          </li>
           <!--SHOW Nav Item logado/nao logado-->
-          <% if( 'user' in locals ) { %> 
+          <% if( 'user' in locals ) { %>
+            <% if( locals.role === 'restrito' ) { %>
+             <!--Se logodo, mostra restritos -->
+            <li class="nav-item">
+              <a class="nav-link" href="/restrito/noticias">Notícias Restritas</a>
+            </li> 
+            <% } %>
+            <% if( locals.role === 'admin' ) { %>
+              <!--Se logodo, mostra restritos -->
+             <li class="nav-item">
+               <a class="nav-link" href="/admin/noticias">Notícias Admin</a>
+             </li> 
+             <% } %>
           <li class="nav-item dropdown">
             <!--SHOW user session-->
             <a class="nav-link dropdown-toggle" href="http://example.com" id="dropdown01" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><%= locals.user.username %></a>
                <!--SHOW user session-->
             <div class="dropdown-menu" aria-labelledby="dropdown01">
-              <a class="dropdown-item" href="#">Action</a>
-              <a class="dropdown-item" href="#">Another action</a>
-              <a class="dropdown-item" href="#">Something else here</a>
+              <!--SHOW change roles -->
+              <% if(locals.user.roles.length > 1) { %>
+                <% locals.user.roles.forEach( role => { %>
+                  <a class="dropdown-item" href="/change-role/<%= role %>"><%= role %></a>
+                 <% }) %>
+              <% } %>
+              <a class="dropdown-item" href="/logout">Sair</a>
             </div>
           </li>
           <% } else { %> 

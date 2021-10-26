@@ -1,35 +1,33 @@
 const express = require('express')
 const Noticia = require('../models/noticia')
 const router = express.Router()
-const modelNoticia = require('../models/noticia')
-
 
 //Checa se usuário está logado
 //tiro a url porque tudo o que for restrito vai passar por esse middleware 
-router.use( (req, res, next)=>{
+router.use((req, res, next)=>{
     if('user' in req.session){
-        if(req.session.user.roles.indexOf('restrito') >=0){
+        //verifica se é admdin ['roles']
+        if(req.session.user.roles.indexOf('admin') >=0 ){
             return next()
         }else{
             res.redirect('/')
-        }
-         
+        }      
+    }else{
+        res.redirect('/login')
     }
-    res.redirect('/login')
+   
  })
 
 router.get('/', (req, res)=> {
-    res.send('restrito')
+    res.send('admin')
 })
 
 
-
-//noticias restritas 
+//pode retornar todas as notícias
 router.get('/noticias', async (req, res)=>{
-    const noticias = await Noticia.find({ category: 'private'})
-    res.render('noticias/restrito', {noticias})
+    const noticias = await Noticia.find({})
+    res.render('noticias/admin', { noticias })
 })
-
 
 
 module.exports = router

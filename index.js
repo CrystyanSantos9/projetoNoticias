@@ -26,63 +26,61 @@ app.use(express.urlencoded({ extended: true}))
 //Static Files
 app.use(express.static('public'))
 
-//MID global - mostrar user logado
-//restrito ou nao 
-app.use((req, res, next)=>{
-    if('user' in req.session){
-        res.locals.user = req.session.user
-    }
-    next()
-})
+
 //ROUTES
 const routesAuth = require('./routes/auth')
 const routesNoticias = require('./routes/noticias')
 const routesRestrito = require('./routes/restrito')
 const routesMainPage = require('./routes/pages')
-
-//mid auth 
-app.use('/restrito', (req, res, next)=>{
-   if('user' in req.session){
-        return next()
-   }
-   res.redirect('/login')
-})
+const routesAdmin = require('./routes/admin')
 
 
-app.use('/restrito', routesRestrito)
-app.use('/noticias', routesNoticias)
 app.use('/', routesAuth)
 app.use('/', routesMainPage)
+app.use('/restrito', routesRestrito)
+app.use('/noticias', routesNoticias)
+app.use('/admin', routesAdmin)
+
+
 
 //Cria usuario inicial
 const createInitialUser = async (UserModal) =>{
     //verifica se usuario admin já existe no sistema
-    const total = await UserModal.countDocuments( { username: 'Crystyan'})
+    const total = await UserModal.countDocuments( {}) //{ username: 'Crystyan'}
     //cria admin
    if(total === 0){
     const user = new UserModal({
-        username: 'Crystyan',
+        username: 'user1',
         password: 'senha',
+        roles: ['restrito','admin']
     })
     await user.save(()=> console.log("User admin created ..."))
+
+    const user2 = new UserModal({
+        username: 'user2',
+        password: 'senha',
+        roles: ['restrito']
+    })
+    await user2.save(()=> console.log("Regular user created ..."))
+
     }else{
         console.log('user created skipped')
     }
 
     //Criando noticias com a inicialização da aplicação
-    const noticiaPublic = new Noticia({
-        title: 'Notícia Pública' + new Date().getTime(),
-        content: 'Informação iniciada com a primeira inicialização da aplicação',
-        category: 'public'
-    })
-    await noticiaPublic.save()
+    // const noticiaPublic = new Noticia({
+    //     title: 'Notícia Pública' + new Date().getTime(),
+    //     content: 'Informação iniciada com a primeira inicialização da aplicação',
+    //     category: 'public'
+    // })
+    // await noticiaPublic.save()
 
-    const noticiaPrivate = new Noticia({
-        title: 'Notícia Privada' + new Date().getTime(),
-        content: 'Informação iniciada com a primeira inicialização da aplicação',
-        category: 'private'
-    })
-    await noticiaPrivate.save()
+    // const noticiaPrivate = new Noticia({
+    //     title: 'Notícia Privada' + new Date().getTime(),
+    //     content: 'Informação iniciada com a primeira inicialização da aplicação',
+    //     category: 'private'
+    // })
+    // await noticiaPrivate.save()
 
 }
 
