@@ -5,9 +5,9 @@ const router = express.Router()
 //Checa se usuário está logado
 //tiro a url porque tudo o que for restrito vai passar por esse middleware 
 router.use((req, res, next)=>{
-    if('user' in req.session){
+    if(req.isAuthenticated()){
         //verifica se é admdin ['roles']
-        if(req.session.user.roles.indexOf('admin') >=0 ){
+        if(req.user.roles.indexOf('admin') >=0 ){
             return next()
         }else{
             res.redirect('/')
