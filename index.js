@@ -1,5 +1,8 @@
 const express = require('express')
 const app = express()
+const https = require('https');
+const http = require('http');
+var fs = require('fs');
 const port = process.env.PORT || 3355
 const path =require('path')
 const session = require('express-session')
@@ -8,6 +11,17 @@ const Noticia = require('./models/noticia')
 const mongoose = require('mongoose')
 //definindo promise global de uso do mongose
 mongoose.Promise = global.Promise
+
+// serve the API on 80 (HTTP) port
+const httpServer = http.createServer(app);
+
+// serve the API with signed certificate on 443 (SSL/HTTPS) port
+const httpsServer = https.createServer({
+    //dinarname vai até = /home/vagrant/github/noticias/
+    //os outros params são a pasta onde está o arquivo e o arquivo 
+    key: fs.readFileSync(path.join(__dirname, 'configs/certs', 'privatekey.pem')),
+    cert: fs.readFileSync(path.join(__dirname, 'configs/certs', 'certificate.pem')),
+  }, app);
 
 //Conexao mongo - escolha driver de conexao
 const mongo = process.env.MONGODB || 'mongodb://localhost/noticias'
@@ -32,7 +46,8 @@ const routesAuth = require('./routes/auth')
 const routesNoticias = require('./routes/noticias')
 const routesRestrito = require('./routes/restrito')
 const routesMainPage = require('./routes/pages')
-const routesAdmin = require('./routes/admin')
+const routesAdmin = require('./routes/admin');
+const { join } = require('path');
 
 
 app.use('/', routesAuth)
@@ -46,7 +61,7 @@ app.use('/admin', routesAdmin)
 //Cria usuario inicial
 const createInitialUser = async (UserModal) =>{
     //verifica se usuario admin já existe no sistema
-    const total = await UserModal.countDocuments( {}) //{ username: 'Crystyan'}
+    const total = await UserModal.countDocuments({}) //{ username: 'Crystyan'}
     //cria admin
    if(total === 0){
     const user = new UserModal({
@@ -91,7 +106,16 @@ mongoose
         //cria usuario inicial
         createInitialUser(User)
     //Start servidor 
-    app.listen(port, ()=> console.log('Listening...'))
+    // app.listen(port, ()=> console.log('Listening...'))
+
+    httpServer.listen(80, () => {
+        console.log('HTTP Server running on port 80');
+    });
+
+    httpsServer.listen(443, () => {
+        console.log('HTTPS Server running on port 443');
+    });
+
     }).catch(e => console.log(e))
 
 

@@ -4,6 +4,7 @@ const User = require('../models/user')
 
 const passport = require('passport')
 const LocalStrategy = require('passport-local').Strategy
+const FacebookStrategy = require('passport-facebook').Strategy
 
 //inicializando o passport
 router.use(passport.initialize())
@@ -19,7 +20,7 @@ passport.deserializeUser((user, done)=>{
   done(null, user)
 })
 
-//configurando passport
+//configurando passport - Estratégia Local
 passport.use(new LocalStrategy(async (username, password, done)=>{
   //procura por username
   const user = await User.findOne({ username })
@@ -33,6 +34,28 @@ passport.use(new LocalStrategy(async (username, password, done)=>{
     //se nao user
   }else{
     return done(null, false)
+  }
+}))
+
+// //configurando passport - Estratégia Facebook
+passport.use(new FacebookStrategy({
+  clientID: '928733271375063',
+  clientSecret: '12a2569b5a92227a522c260f5d49bfd5',
+  callbackURL: 'https://192.168.1.103/facebook/callback',
+  profileFields: ['id', 'email', 'photos', 'displayName']
+}, async( accessToken, refreshToken, profile, done) =>{
+  const userDB = await User.findOne({ facebookId: profile.id })
+  if (!userDB) {
+    // console.log(profile)
+    const user = new User({
+      name: profile.displayName,
+      facebookId: profile.id,
+      roles: ['restrito']
+    })
+    await user.save()
+    done(null, user)
+  }else{
+    done(null, userDB)
   }
 }))
 
@@ -68,10 +91,11 @@ router.get('/login', (req, res)=>{
     res.render('login')
 })
 
-router.get('/logout', (req, res)=>{
- req.session.destroy(()=>{
-  res.redirect('/')
- })
+router.get('/logout', function(req, res){
+  req.session.destroy(() => {
+    req.logout()
+    res.redirect('/')
+  })
 })
 
 router.post('/login', passport.authenticate('local', {
@@ -79,4 +103,23 @@ router.post('/login', passport.authenticate('local', {
   failureRedirect: '/login',
   failureFlash: false
 }))
+
+router.get('/facebook', passport.authenticate('facebook'))
+router.get('/facebook/callback',
+  passport.authenticate('facebook', { failureRedirect: '/' }),
+  (req, res) => {
+    res.redirect('/')
+  }
+)
+
+// router.get('/facebook', passport.authenticate('facebook'))
+// //tela intermeridária do facebook - redireciona para callback 
+// router.get('/facebook/callback', 
+// //passando por tela de transição do facebook - se der falha manda pro barra
+//                 passport.authenticate('facebook', { failureRedirect: '/' }),
+//                 (req, res)=>{
+//                   //logou com sucesso
+//                   req.redirect('/')
+//                 }
+// )
 module.exports = router
