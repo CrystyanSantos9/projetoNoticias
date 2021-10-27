@@ -1,10 +1,12 @@
 const express = require('express')
 const router = express.Router()
 const User = require('../models/user')
+require('dotenv/config')
 
 const passport = require('passport')
 const LocalStrategy = require('passport-local').Strategy
 const FacebookStrategy = require('passport-facebook').Strategy
+const GoogleStrategy = require('passport-google-oauth').OAuth2Strategy
 
 //inicializando o passport
 router.use(passport.initialize())
@@ -39,8 +41,8 @@ passport.use(new LocalStrategy(async (username, password, done)=>{
 
 // //configurando passport - Estratégia Facebook
 passport.use(new FacebookStrategy({
-  clientID: '928733271375063',
-  clientSecret: '12a2569b5a92227a522c260f5d49bfd5',
+  clientID: process.env.FacebookclientID,
+  clientSecret: process.env.FacebookclientSecret,
   callbackURL: 'https://192.168.1.103/facebook/callback',
   profileFields: ['id', 'email', 'photos', 'displayName']
 }, async( accessToken, refreshToken, profile, done) =>{
@@ -50,6 +52,31 @@ passport.use(new FacebookStrategy({
     const user = new User({
       name: profile.displayName,
       facebookId: profile.id,
+      roles: ['restrito']
+    })
+    await user.save()
+    done(null, user)
+  }else{
+    done(null, userDB)
+  }
+}))
+
+
+//Oauth Google
+
+// //configurando passport - Estratégia Facebook
+passport.use(new GoogleStrategy({
+  clientID: process.env.GoogleclientID,
+  clientSecret: process.env.GoogleclientSecret,
+  callbackURL: 'https://portal.noticia.com/google/callback',
+  profileFields: ['id', 'email', 'photos', 'displayName']
+}, async( accessToken, refreshToken, err, profile, done) =>{
+  const userDB = await User.findOne({ googleId: profile.id })
+  if (!userDB) {
+    // console.log(profile)
+    const user = new User({
+      name: profile.displayName,
+      googleId: profile.id,
       roles: ['restrito']
     })
     await user.save()
@@ -111,6 +138,10 @@ router.get('/facebook/callback',
     res.redirect('/')
   }
 )
+
+router.get('/google', passport.authenticate('google', {scope: ['https://www.googleapis.com/auth/userinfo.profile']}))
+router.get('/google/callback',
+  passport.authenticate('google', { failureRedirect: '/', successRedirect: '/'}))
 
 // router.get('/facebook', passport.authenticate('facebook'))
 // //tela intermeridária do facebook - redireciona para callback 
